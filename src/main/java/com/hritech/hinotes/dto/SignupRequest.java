@@ -1,7 +1,6 @@
 package com.hritech.hinotes.dto;
 
 import lombok.Data;
-
 @Data
 public class SignupRequest {
     private String name;

@@ -13,7 +13,6 @@ public class CustomUserDetails implements UserDetails {
 
     public CustomUserDetails(User user) {
         this.user = user;
-        System.out.println("in CustomUserDetails ");
     }
 
     @Override
@@ -28,7 +27,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getUsername() {
-        return user.getName(); // or getEmail() if you want to login by email
+        return user.getEmail();
     }
 
     @Override

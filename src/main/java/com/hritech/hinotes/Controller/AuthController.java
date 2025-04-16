@@ -3,11 +3,12 @@ package com.hritech.hinotes.Controller;
 import java.util.Collections;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.neo4j.Neo4jProperties.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hritech.hinotes.Model.User;
 import com.hritech.hinotes.Repository.UserRepo;
 import com.hritech.hinotes.Security.JwtUtil;
+import com.hritech.hinotes.Service.CurrentUser;
 import com.hritech.hinotes.dto.LoginRequest;
 import com.hritech.hinotes.dto.SignupRequest;
 
@@ -35,27 +37,41 @@ public class AuthController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private CurrentUser currentUser;
+
     @PostMapping("/signup")
     public ResponseEntity<?> register(@RequestBody SignupRequest request) {
-        if (userRepo.findByName(request.getName()).isPresent()) {
-            return ResponseEntity.badRequest().body("User already exists");
+        if (userRepo.findByEmail(request.getEmail()).isPresent()) {
+            return ResponseEntity.badRequest() .body("User already exists");
         }
+        System.out.println("in signup");
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         userRepo.save(user);
-        return ResponseEntity.ok("User registered successfully");
+        String token = jwtUtil.generateToken(request.getEmail());
+        return ResponseEntity.ok(Collections.singletonMap("auth-token", token));
+        // return ResponseEntity.ok("User registered successfully/n"+user.toString());
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        Authentication authentication = (Authentication) authManager.authenticate(
-            new UsernamePasswordAuthenticationToken(request.getName(), request.getPassword())
+        System.out.println("in login");
+        Authentication authentication = authManager.authenticate(
+            new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
-
-        String token = jwtUtil.generateToken(request.getName());
-        return ResponseEntity.ok(Collections.singletonMap("token", token));
+        String token = jwtUtil.generateToken(request.getEmail());
+        return ResponseEntity.ok(Collections.singletonMap("authToken", token));
     }
+
+    @GetMapping("/userdetails")
+    public ResponseEntity<?> getUserDetails() {
+        User user = currentUser.getCurrentUser();
+
+        return ResponseEntity.ok(Collections.singletonMap("currentUser: ", user));
+    }
+
 }
 
